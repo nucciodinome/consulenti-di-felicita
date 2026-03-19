@@ -23,6 +23,11 @@ from utils.layout import (
     info_box,
     warning_box,
 )
+from utils.card_ui import (
+    render_card_grid,
+    toggle_single_select,
+    toggle_multi_select,
+)
 
 st.set_page_config(
     page_title="Consulenti di Felicità",
@@ -88,6 +93,27 @@ def clear_group_result(group_name: str) -> None:
         st.session_state["group2_show_result"] = False
 
 
+def render_selection_status(red_card: str | None, nonred_cards: list[str]) -> None:
+    st.markdown("### Scelte attuali")
+    st.write(f"**Carta rossa:** {red_card if red_card else 'nessuna'}")
+    st.write(f"**Carte non rosse ({len(nonred_cards)}/4):**")
+    if nonred_cards:
+        for c in nonred_cards:
+            st.write(f"- {c}")
+    else:
+        st.write("Nessuna carta selezionata.")
+
+
+def render_solution_status(solution_cards: list[str]) -> None:
+    st.markdown("### Soluzioni selezionate")
+    st.write(f"**Carte attive ({len(solution_cards)}/3):**")
+    if solution_cards:
+        for c in solution_cards:
+            st.write(f"- {c}")
+    else:
+        st.write("Nessuna carta selezionata.")
+
+
 # =========================
 # Sidebar
 # =========================
@@ -125,35 +151,60 @@ if st.session_state["phase"] == "group1_select_all":
     )
     info_box("In questa fase il Gruppo 1 costruisce il proprio set iniziale di 5 carte.")
 
-    red_default_index = (
-        RED_ORDER.index(st.session_state["group1_selected_red"])
-        if st.session_state["group1_selected_red"] in RED_ORDER
-        else 0
+    st.markdown("## Carte rosse")
+    clicked_red = render_card_grid(
+        card_names=RED_ORDER,
+        cards_dict=RED_CARDS,
+        selected_cards=[st.session_state["group1_selected_red"]] if st.session_state["group1_selected_red"] else [],
+        blocked_cards=[],
+        columns=4,
+        key_prefix="g1_red",
+        compact=True,
     )
+    if clicked_red:
+        st.session_state["group1_selected_red"] = toggle_single_select(
+            st.session_state["group1_selected_red"],
+            clicked_red,
+        )
+        clear_group_result("group1")
+        st.rerun()
 
-    red_choice = st.radio(
-        "Scegliete la carta rossa",
-        RED_ORDER,
-        index=red_default_index,
+    st.markdown("## Carte verdi e gialle")
+    nonred_cards_dict = {**GREEN_CARDS, **YELLOW_CARDS}
+
+    clicked_nonred = render_card_grid(
+        card_names=NON_RED_ORDER,
+        cards_dict=nonred_cards_dict,
+        selected_cards=st.session_state["group1_selected_nonred"],
+        blocked_cards=[],
+        columns=4,
+        key_prefix="g1_nonred",
+        compact=True,
     )
+    if clicked_nonred:
+        st.session_state["group1_selected_nonred"] = toggle_multi_select(
+            st.session_state["group1_selected_nonred"],
+            clicked_nonred,
+            max_selections=4,
+        )
+        clear_group_result("group1")
+        st.rerun()
 
-    nonred_choice = st.multiselect(
-        "Scegliete 4 carte non rosse",
-        NON_RED_ORDER,
-        default=st.session_state["group1_selected_nonred"],
-        max_selections=4,
+    render_selection_status(
+        st.session_state["group1_selected_red"],
+        st.session_state["group1_selected_nonred"],
     )
 
     col1, col2 = st.columns([1, 1])
-
     with col2:
         if st.button("Salva Gruppo 1 e continua", use_container_width=True):
-            is_valid, msg = validate_full_selection(red_choice, nonred_choice)
+            is_valid, msg = validate_full_selection(
+                st.session_state["group1_selected_red"],
+                st.session_state["group1_selected_nonred"],
+            )
             if not is_valid:
                 st.error(msg)
             else:
-                st.session_state["group1_selected_red"] = red_choice
-                st.session_state["group1_selected_nonred"] = nonred_choice
                 st.session_state["group1_solution_cards"] = []
                 clear_group_result("group1")
                 next_phase()
@@ -169,55 +220,75 @@ elif st.session_state["phase"] == "group2_select_all":
         "Fase 2 - Gruppo 2: scegli le carte",
         "Scegliete 1 carta rossa e 4 carte non rosse. Le carte già prese dal Gruppo 1 non sono disponibili.",
     )
-    warning_box("Il Gruppo 2 non può usare le stesse carte già selezionate dal Gruppo 1.")
+    warning_box("Le carte già scelte dal Gruppo 1 sono bloccate per il Gruppo 2.")
 
     blocked_red = get_blocked_red_cards_for_group2()
-    available_red = [c for c in RED_ORDER if c not in blocked_red]
-
     blocked_nonred = get_blocked_nonred_cards_for_group2()
-    available_nonred = [c for c in NON_RED_ORDER if c not in blocked_nonred]
 
-    if not available_red or len(available_nonred) < 4:
-        st.error("Non ci sono abbastanza carte disponibili per il Gruppo 2.")
-    else:
-        default_red_index = (
-            available_red.index(st.session_state["group2_selected_red"])
-            if st.session_state["group2_selected_red"] in available_red
-            else 0
+    st.markdown("## Carte rosse")
+    clicked_red = render_card_grid(
+        card_names=RED_ORDER,
+        cards_dict=RED_CARDS,
+        selected_cards=[st.session_state["group2_selected_red"]] if st.session_state["group2_selected_red"] else [],
+        blocked_cards=blocked_red,
+        columns=4,
+        key_prefix="g2_red",
+        compact=True,
+    )
+    if clicked_red and clicked_red not in blocked_red:
+        st.session_state["group2_selected_red"] = toggle_single_select(
+            st.session_state["group2_selected_red"],
+            clicked_red,
         )
+        clear_group_result("group2")
+        st.rerun()
 
-        red_choice = st.radio(
-            "Scegliete la carta rossa",
-            available_red,
-            index=default_red_index,
-        )
+    st.markdown("## Carte verdi e gialle")
+    nonred_cards_dict = {**GREEN_CARDS, **YELLOW_CARDS}
 
-        nonred_choice = st.multiselect(
-            "Scegliete 4 carte non rosse",
-            available_nonred,
-            default=[c for c in st.session_state["group2_selected_nonred"] if c in available_nonred],
+    clicked_nonred = render_card_grid(
+        card_names=NON_RED_ORDER,
+        cards_dict=nonred_cards_dict,
+        selected_cards=st.session_state["group2_selected_nonred"],
+        blocked_cards=blocked_nonred,
+        columns=4,
+        key_prefix="g2_nonred",
+        compact=True,
+    )
+    if clicked_nonred and clicked_nonred not in blocked_nonred:
+        st.session_state["group2_selected_nonred"] = toggle_multi_select(
+            st.session_state["group2_selected_nonred"],
+            clicked_nonred,
             max_selections=4,
         )
+        clear_group_result("group2")
+        st.rerun()
 
-        col1, col2 = st.columns([1, 1])
+    render_selection_status(
+        st.session_state["group2_selected_red"],
+        st.session_state["group2_selected_nonred"],
+    )
 
-        with col1:
-            if st.button("⬅️ Indietro", use_container_width=True):
-                previous_phase()
+    col1, col2 = st.columns([1, 1])
+
+    with col1:
+        if st.button("⬅️ Indietro", use_container_width=True):
+            previous_phase()
+            st.rerun()
+
+    with col2:
+        if st.button("Salva Gruppo 2 e continua", use_container_width=True):
+            is_valid, msg = validate_full_selection(
+                st.session_state["group2_selected_red"],
+                st.session_state["group2_selected_nonred"],
+            )
+            if not is_valid:
+                st.error(msg)
+            else:
+                st.session_state["group2_solution_cards"] = []
+                clear_group_result("group2")
+                next_phase()
                 st.rerun()
-
-        with col2:
-            if st.button("Salva Gruppo 2 e continua", use_container_width=True):
-                is_valid, msg = validate_full_selection(red_choice, nonred_choice)
-                if not is_valid:
-                    st.error(msg)
-                else:
-                    st.session_state["group2_selected_red"] = red_choice
-                    st.session_state["group2_selected_nonred"] = nonred_choice
-                    st.session_state["group2_solution_cards"] = []
-                    clear_group_result("group2")
-                    next_phase()
-                    st.rerun()
 
 
 # =========================
@@ -234,6 +305,8 @@ elif st.session_state["phase"] == "group1_problem":
     red_data = RED_CARDS[red_card]
 
     st.subheader(red_card)
+    if red_data.get("image"):
+        st.image(red_data["image"], width=400)
     st.write(red_data["description"])
 
     st.markdown("### Impatto iniziale")
@@ -268,6 +341,8 @@ elif st.session_state["phase"] == "group2_problem":
     red_data = RED_CARDS[red_card]
 
     st.subheader(red_card)
+    if red_data.get("image"):
+        st.image(red_data["image"], width=400)
     st.write(red_data["description"])
 
     st.markdown("### Impatto iniziale")
@@ -302,13 +377,27 @@ elif st.session_state["phase"] == "group1_select_solutions":
         info_box("Modalità revisione attiva: il Gruppo 1 può modificare le sue 3 carte soluzione.")
 
     available_cards = st.session_state["group1_selected_nonred"]
+    cards_dict = {name: ({**GREEN_CARDS, **YELLOW_CARDS}[name]) for name in available_cards}
 
-    solution_choice = st.multiselect(
-        "Carte soluzione del Gruppo 1",
-        available_cards,
-        default=[c for c in st.session_state["group1_solution_cards"] if c in available_cards],
-        max_selections=3,
+    clicked_solution = render_card_grid(
+        card_names=available_cards,
+        cards_dict=cards_dict,
+        selected_cards=st.session_state["group1_solution_cards"],
+        blocked_cards=[],
+        columns=4,
+        key_prefix="g1_sol",
+        compact=True,
     )
+    if clicked_solution:
+        st.session_state["group1_solution_cards"] = toggle_multi_select(
+            st.session_state["group1_solution_cards"],
+            clicked_solution,
+            max_selections=3,
+        )
+        clear_group_result("group1")
+        st.rerun()
+
+    render_solution_status(st.session_state["group1_solution_cards"])
 
     col1, col2 = st.columns([1, 1])
 
@@ -319,11 +408,10 @@ elif st.session_state["phase"] == "group1_select_solutions":
 
     with col2:
         if st.button("Salva soluzioni Gruppo 1 e continua", use_container_width=True):
-            is_valid, msg = validate_solution_selection(solution_choice)
+            is_valid, msg = validate_solution_selection(st.session_state["group1_solution_cards"])
             if not is_valid:
                 st.error(msg)
             else:
-                st.session_state["group1_solution_cards"] = solution_choice
                 clear_group_result("group1")
 
                 if st.session_state["revision_mode"] and st.session_state["revision_target_group"] == "group1":
@@ -349,13 +437,27 @@ elif st.session_state["phase"] == "group2_select_solutions":
         info_box("Modalità revisione attiva: il Gruppo 2 può modificare le sue 3 carte soluzione.")
 
     available_cards = st.session_state["group2_selected_nonred"]
+    cards_dict = {name: ({**GREEN_CARDS, **YELLOW_CARDS}[name]) for name in available_cards}
 
-    solution_choice = st.multiselect(
-        "Carte soluzione del Gruppo 2",
-        available_cards,
-        default=[c for c in st.session_state["group2_solution_cards"] if c in available_cards],
-        max_selections=3,
+    clicked_solution = render_card_grid(
+        card_names=available_cards,
+        cards_dict=cards_dict,
+        selected_cards=st.session_state["group2_solution_cards"],
+        blocked_cards=[],
+        columns=4,
+        key_prefix="g2_sol",
+        compact=True,
     )
+    if clicked_solution:
+        st.session_state["group2_solution_cards"] = toggle_multi_select(
+            st.session_state["group2_solution_cards"],
+            clicked_solution,
+            max_selections=3,
+        )
+        clear_group_result("group2")
+        st.rerun()
+
+    render_solution_status(st.session_state["group2_solution_cards"])
 
     col1, col2 = st.columns([1, 1])
 
@@ -366,11 +468,10 @@ elif st.session_state["phase"] == "group2_select_solutions":
 
     with col2:
         if st.button("Salva soluzioni Gruppo 2 e vai ai risultati", use_container_width=True):
-            is_valid, msg = validate_solution_selection(solution_choice)
+            is_valid, msg = validate_solution_selection(st.session_state["group2_solution_cards"])
             if not is_valid:
                 st.error(msg)
             else:
-                st.session_state["group2_solution_cards"] = solution_choice
                 clear_group_result("group2")
 
                 if st.session_state["revision_mode"] and st.session_state["revision_target_group"] == "group2":
@@ -394,7 +495,6 @@ elif st.session_state["phase"] == "results":
 
     col_left, col_right = st.columns(2)
 
-    # Gruppo 1
     with col_left:
         st.subheader("Gruppo 1")
 
@@ -421,7 +521,6 @@ elif st.session_state["phase"] == "results":
                     start_revision("group1")
                     st.rerun()
 
-    # Gruppo 2
     with col_right:
         st.subheader("Gruppo 2")
 
