@@ -165,7 +165,7 @@ def render_card_tile(
     )
 
     if img is not None:
-        st.image(img, use_container_width=True)
+        st.image(img, width="stretch")
     else:
         st.markdown(
             "<div class='cdf-missing-image'>immagine non trovata</div>",
@@ -222,7 +222,7 @@ def render_card_tile(
         button_label,
         key=button_key,
         disabled=blocked,
-        use_container_width=True,
+        width="stretch",
     )
 
     st.markdown("</div>", unsafe_allow_html=True)
