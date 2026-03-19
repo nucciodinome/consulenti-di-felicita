@@ -103,7 +103,7 @@ with st.sidebar:
     st.markdown("### Controlli")
     st.write(f"**Fase corrente:** `{st.session_state['phase']}`")
 
-    if st.button("🔄 Ricomincia da capo", use_container_width=True):
+    if st.button("🔄 Ricomincia da capo", width="stretch"):
         reset_game()
         st.rerun()
 
@@ -179,7 +179,7 @@ if st.session_state["phase"] == "group1_select_all":
 
     col1, col2 = st.columns([1, 1])
     with col2:
-        if st.button("Salva Gruppo 1 e continua", use_container_width=True):
+        if st.button("Salva Gruppo 1 e continua", width="stretch"):
             is_valid, msg = validate_full_selection(
                 st.session_state["group1_selected_red"],
                 st.session_state["group1_selected_nonred"],
@@ -255,12 +255,12 @@ elif st.session_state["phase"] == "group2_select_all":
     col1, col2 = st.columns([1, 1])
 
     with col1:
-        if st.button("⬅️ Indietro", use_container_width=True):
+        if st.button("⬅️ Indietro", width="stretch"):
             previous_phase()
             st.rerun()
 
     with col2:
-        if st.button("Salva Gruppo 2 e continua", use_container_width=True):
+        if st.button("Salva Gruppo 2 e continua", width="stretch"):
             is_valid, msg = validate_full_selection(
                 st.session_state["group2_selected_red"],
                 st.session_state["group2_selected_nonred"],
@@ -300,12 +300,12 @@ elif st.session_state["phase"] == "group1_problem":
     col1, col2 = st.columns([1, 1])
 
     with col1:
-        if st.button("⬅️ Indietro", use_container_width=True):
+        if st.button("⬅️ Indietro", width="stretch"):
             previous_phase()
             st.rerun()
 
     with col2:
-        if st.button("Continua", use_container_width=True):
+        if st.button("Continua", width="stretch"):
             next_phase()
             st.rerun()
 
@@ -336,12 +336,12 @@ elif st.session_state["phase"] == "group2_problem":
     col1, col2 = st.columns([1, 1])
 
     with col1:
-        if st.button("⬅️ Indietro", use_container_width=True):
+        if st.button("⬅️ Indietro", width="stretch"):
             previous_phase()
             st.rerun()
 
     with col2:
-        if st.button("Continua", use_container_width=True):
+        if st.button("Continua", width="stretch"):
             next_phase()
             st.rerun()
 
@@ -387,12 +387,12 @@ elif st.session_state["phase"] == "group1_select_solutions":
     col1, col2 = st.columns([1, 1])
 
     with col1:
-        if st.button("⬅️ Indietro", use_container_width=True):
+        if st.button("⬅️ Indietro", width="stretch"):
             previous_phase()
             st.rerun()
 
     with col2:
-        if st.button("Salva soluzioni Gruppo 1 e continua", use_container_width=True):
+        if st.button("Salva soluzioni Gruppo 1 e continua", width="stretch"):
             is_valid, msg = validate_solution_selection(st.session_state["group1_solution_cards"])
             if not is_valid:
                 st.error(msg)
@@ -449,12 +449,12 @@ elif st.session_state["phase"] == "group2_select_solutions":
     col1, col2 = st.columns([1, 1])
 
     with col1:
-        if st.button("⬅️ Indietro", use_container_width=True):
+        if st.button("⬅️ Indietro", width="stretch"):
             previous_phase()
             st.rerun()
 
     with col2:
-        if st.button("Salva soluzioni Gruppo 2 e vai ai risultati", use_container_width=True):
+        if st.button("Salva soluzioni Gruppo 2 e vai ai risultati", width="stretch"):
             is_valid, msg = validate_solution_selection(st.session_state["group2_solution_cards"])
             if not is_valid:
                 st.error(msg)
@@ -498,13 +498,13 @@ elif st.session_state["phase"] == "results":
             render_contribution_table(st.session_state["group1_result"])
 
             if not st.session_state["group1_show_result"]:
-                if st.button("Calcola esiti Gruppo 1", key="show_g1", use_container_width=True):
+                if st.button("Calcola esiti Gruppo 1", key="show_g1", width="stretch"):
                     st.session_state["group1_show_result"] = True
                     st.rerun()
             else:
                 render_result_panel(st.session_state["group1_result"], "Gruppo 1")
 
-                if st.button("Rivedi le soluzioni del Gruppo 1", key="revise_g1", use_container_width=True):
+                if st.button("Rivedi le soluzioni del Gruppo 1", key="revise_g1", width="stretch"):
                     start_revision("group1")
                     st.rerun()
 
@@ -524,13 +524,13 @@ elif st.session_state["phase"] == "results":
             render_contribution_table(st.session_state["group2_result"])
 
             if not st.session_state["group2_show_result"]:
-                if st.button("Calcola esiti Gruppo 2", key="show_g2", use_container_width=True):
+                if st.button("Calcola esiti Gruppo 2", key="show_g2", width="stretch"):
                     st.session_state["group2_show_result"] = True
                     st.rerun()
             else:
                 render_result_panel(st.session_state["group2_result"], "Gruppo 2")
 
-                if st.button("Rivedi le soluzioni del Gruppo 2", key="revise_g2", use_container_width=True):
+                if st.button("Rivedi le soluzioni del Gruppo 2", key="revise_g2", width="stretch"):
                     start_revision("group2")
                     st.rerun()
 
@@ -538,11 +538,11 @@ elif st.session_state["phase"] == "results":
     bottom_col1, bottom_col2 = st.columns([1, 1])
 
     with bottom_col1:
-        if st.button("⬅️ Torna alla scelta soluzioni Gruppo 2", use_container_width=True):
+        if st.button("⬅️ Torna alla scelta soluzioni Gruppo 2", width="stretch"):
             st.session_state["phase"] = "group2_select_solutions"
             st.rerun()
 
     with bottom_col2:
-        if st.button("🔄 Nuova partita", use_container_width=True):
+        if st.button("🔄 Nuova partita", width="stretch"):
             reset_game()
             st.rerun()
