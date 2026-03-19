@@ -96,9 +96,8 @@ def render_contribution_table(result: dict) -> None:
 
 
 def render_score_bars(scores: dict) -> None:
-    """
-    Mostra istogramma delle 3 dimensioni finali su scala 0-5.
-    """
+    import pandas as pd
+
     df = pd.DataFrame(
         {
             "Dimensione": ["Equità", "Libertà", "Benessere"],
@@ -106,7 +105,7 @@ def render_score_bars(scores: dict) -> None:
         }
     ).set_index("Dimensione")
 
-    st.bar_chart(df, y="Punteggio")
+    st.bar_chart(df)
 
 
 def render_dimension_badges(scores: dict) -> None:
