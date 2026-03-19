@@ -6,7 +6,9 @@ Adattato per il gioco "Consulenti di Felicità".
 from __future__ import annotations
 
 from pathlib import Path
+
 import streamlit as st
+from PIL import Image
 
 
 CARD_TYPE_STYLES = {
@@ -37,12 +39,29 @@ CARD_TYPE_STYLES = {
 }
 
 
-def _safe_image(path: str) -> str | None:
+def _safe_image_path(path: str) -> str | None:
     """Restituisce il path solo se il file esiste."""
     if not path:
         return None
     p = Path(path)
     return str(p) if p.exists() else None
+
+
+@st.cache_data(show_spinner=False)
+def load_card_image(path: str) -> Image.Image | None:
+    """
+    Carica e cachea un'immagine carta.
+    Restituisce None se il file non esiste o non è leggibile.
+    """
+    safe_path = _safe_image_path(path)
+    if safe_path is None:
+        return None
+
+    try:
+        with Image.open(safe_path) as img:
+            return img.copy()
+    except Exception:
+        return None
 
 
 def inject_card_ui_css() -> None:
@@ -127,7 +146,7 @@ def render_card_tile(
     """
     card_type = card_data.get("type", "")
     style = CARD_TYPE_STYLES.get(card_type, CARD_TYPE_STYLES["yellow"])
-    image_path = _safe_image(card_data.get("image", ""))
+    img = load_card_image(card_data.get("image", ""))
 
     border_width = "4px" if selected else "2px"
     opacity = "0.45" if blocked else "1.0"
@@ -145,8 +164,8 @@ def render_card_tile(
         unsafe_allow_html=True,
     )
 
-    if image_path:
-        st.image(image_path, use_container_width=True)
+    if img is not None:
+        st.image(img, use_container_width=True)
     else:
         st.markdown(
             "<div class='cdf-missing-image'>immagine non trovata</div>",
