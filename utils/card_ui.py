@@ -1,5 +1,6 @@
 """
 Componenti UI per la visualizzazione e selezione delle carte.
+Adattato per il gioco "Consulenti di Felicità".
 """
 
 from __future__ import annotations
@@ -14,18 +15,24 @@ CARD_TYPE_STYLES = {
         "emoji": "🔴",
         "bg": "#fde2e2",
         "border": "#d9534f",
+        "badge_bg": "#d9534f",
+        "badge_fg": "#ffffff",
     },
     "green": {
         "label": "Risorsa",
         "emoji": "🟢",
         "bg": "#e6f4ea",
         "border": "#2e8b57",
+        "badge_bg": "#2e8b57",
+        "badge_fg": "#ffffff",
     },
     "yellow": {
         "label": "Fattore ambiguo",
         "emoji": "🟡",
         "bg": "#fff8db",
         "border": "#c9a227",
+        "badge_bg": "#c9a227",
+        "badge_fg": "#1f1f1f",
     },
 }
 
@@ -36,6 +43,73 @@ def _safe_image(path: str) -> str | None:
         return None
     p = Path(path)
     return str(p) if p.exists() else None
+
+
+def inject_card_ui_css() -> None:
+    """CSS globale leggero per migliorare la resa delle card."""
+    st.markdown(
+        """
+        <style>
+        .cdf-card-shell {
+            border-radius: 18px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .cdf-card-title {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-top: 0.4rem;
+            margin-bottom: 0.25rem;
+            line-height: 1.2;
+            min-height: 2.4em;
+        }
+        .cdf-card-badges {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 0.45rem;
+        }
+        .cdf-card-badge {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .cdf-card-desc {
+            font-size: 0.90rem;
+            line-height: 1.25;
+            min-height: 4.3em;
+            margin-bottom: 0.4rem;
+        }
+        .cdf-missing-image {
+            height: 160px;
+            border-radius: 12px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 0.95rem;
+            border: 1px dashed #bbb;
+            margin-bottom: 8px;
+        }
+        .cdf-counter {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_selection_counter(label: str, selected_count: int, max_count: int) -> None:
+    st.markdown(
+        f"<div class='cdf-counter'>{label}: {selected_count}/{max_count}</div>",
+        unsafe_allow_html=True,
+    )
 
 
 def render_card_tile(
@@ -57,67 +131,82 @@ def render_card_tile(
 
     border_width = "4px" if selected else "2px"
     opacity = "0.45" if blocked else "1.0"
-    outline = "box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.25);" if selected else ""
+    shadow = "0 0 0 4px rgba(0, 123, 255, 0.18)" if selected else "0 1px 2px rgba(0,0,0,0.04)"
 
-    container_style = f"""
-        border: {border_width} solid {style['border']};
-        border-radius: 16px;
-        padding: 10px;
-        background: {style['bg']};
-        opacity: {opacity};
-        min-height: 100%;
-        {outline}
-    """
+    st.markdown(
+        f"""
+        <div class="cdf-card-shell" style="
+            border: {border_width} solid {style['border']};
+            background: {style['bg']};
+            opacity: {opacity};
+            box-shadow: {shadow};
+        ">
+        """,
+        unsafe_allow_html=True,
+    )
 
-    with st.container():
-        st.markdown(f"<div style='{container_style}'>", unsafe_allow_html=True)
-
-        if image_path:
-            st.image(image_path, use_container_width=True)
-        else:
-            st.markdown(
-                f"""
-                <div style="
-                    height: 170px;
-                    border-radius: 12px;
-                    background: white;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: #666;
-                    font-size: 0.95rem;
-                    border: 1px dashed #bbb;
-                ">
-                    immagine non trovata
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-        st.markdown(f"**{card_name}**")
-        st.caption(f"{style['emoji']} {style['label']}")
-
-        if not compact:
-            st.write(card_data.get("description", ""))
-
-        if show_scores:
-            c1, c2, c3 = st.columns(3)
-            c1.metric("E", card_data.get("E", 0))
-            c2.metric("L", card_data.get("L", 0))
-            c3.metric("B", card_data.get("B", 0))
-
-        button_label = "Selezionata" if selected else "Scegli"
-        if blocked:
-            button_label = "Non disponibile"
-
-        clicked = st.button(
-            button_label,
-            key=button_key,
-            disabled=blocked,
-            use_container_width=True,
+    if image_path:
+        st.image(image_path, use_container_width=True)
+    else:
+        st.markdown(
+            "<div class='cdf-missing-image'>immagine non trovata</div>",
+            unsafe_allow_html=True,
         )
 
-        st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown(
+        f"<div class='cdf-card-title'>{card_name}</div>",
+        unsafe_allow_html=True,
+    )
+
+    badges_html = [
+        (
+            f"<span class='cdf-card-badge' "
+            f"style='background:{style['badge_bg']}; color:{style['badge_fg']};'>"
+            f"{style['emoji']} {style['label']}</span>"
+        )
+    ]
+
+    if selected:
+        badges_html.append(
+            "<span class='cdf-card-badge' style='background:#0d6efd; color:white;'>Selezionata</span>"
+        )
+    if blocked:
+        badges_html.append(
+            "<span class='cdf-card-badge' style='background:#6c757d; color:white;'>Bloccata</span>"
+        )
+
+    st.markdown(
+        f"<div class='cdf-card-badges'>{''.join(badges_html)}</div>",
+        unsafe_allow_html=True,
+    )
+
+    if not compact:
+        st.markdown(
+            f"<div class='cdf-card-desc'>{card_data.get('description', '')}</div>",
+            unsafe_allow_html=True,
+        )
+
+    if show_scores:
+        c1, c2, c3 = st.columns(3)
+        c1.metric("E", card_data.get("E", 0))
+        c2.metric("L", card_data.get("L", 0))
+        c3.metric("B", card_data.get("B", 0))
+
+    if blocked:
+        button_label = "Non disponibile"
+    elif selected:
+        button_label = "Deseleziona"
+    else:
+        button_label = "Scegli"
+
+    clicked = st.button(
+        button_label,
+        key=button_key,
+        disabled=blocked,
+        use_container_width=True,
+    )
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
     return clicked
 
@@ -130,6 +219,7 @@ def render_card_grid(
     columns: int = 4,
     key_prefix: str = "grid",
     compact: bool = False,
+    show_scores: bool = False,
 ) -> str | None:
     """
     Renderizza una griglia di carte.
@@ -143,24 +233,66 @@ def render_card_grid(
 
     for row_idx, row_cards in enumerate(rows):
         cols = st.columns(columns)
-        for col_idx, card_name in enumerate(row_cards):
+        for col_idx in range(columns):
             with cols[col_idx]:
-                clicked = render_card_tile(
-                    card_name=card_name,
-                    card_data=cards_dict[card_name],
-                    selected=card_name in selected_cards,
-                    blocked=card_name in blocked_cards,
-                    button_key=f"{key_prefix}_{row_idx}_{col_idx}_{card_name}",
-                    compact=compact,
-                )
-                if clicked:
-                    clicked_card = card_name
+                if col_idx < len(row_cards):
+                    card_name = row_cards[col_idx]
+                    clicked = render_card_tile(
+                        card_name=card_name,
+                        card_data=cards_dict[card_name],
+                        selected=card_name in selected_cards,
+                        blocked=card_name in blocked_cards,
+                        button_key=f"{key_prefix}_{row_idx}_{col_idx}_{card_name}",
+                        compact=compact,
+                        show_scores=show_scores,
+                    )
+                    if clicked:
+                        clicked_card = card_name
+                else:
+                    st.empty()
 
     return clicked_card
 
 
+def render_card_section(
+    title: str,
+    card_names: list[str],
+    cards_dict: dict,
+    selected_cards: list[str] | None = None,
+    blocked_cards: list[str] | None = None,
+    columns: int = 4,
+    key_prefix: str = "section",
+    compact: bool = False,
+    show_scores: bool = False,
+    counter_label: str | None = None,
+    counter_selected: int | None = None,
+    counter_max: int | None = None,
+) -> str | None:
+    """
+    Sezione completa con titolo + contatore opzionale + griglia.
+    """
+    st.markdown(f"## {title}")
+
+    if counter_label is not None and counter_selected is not None and counter_max is not None:
+        render_selection_counter(counter_label, counter_selected, counter_max)
+
+    return render_card_grid(
+        card_names=card_names,
+        cards_dict=cards_dict,
+        selected_cards=selected_cards,
+        blocked_cards=blocked_cards,
+        columns=columns,
+        key_prefix=key_prefix,
+        compact=compact,
+        show_scores=show_scores,
+    )
+
+
 def toggle_single_select(current_value: str | None, clicked_card: str) -> str:
-    """Selezione singola. Se clicchi una carta già attiva, resta attiva."""
+    """
+    Selezione singola.
+    Se clicchi una carta già attiva, resta attiva.
+    """
     return clicked_card if clicked_card else current_value
 
 
