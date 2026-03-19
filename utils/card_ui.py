@@ -75,12 +75,13 @@ def inject_card_ui_css() -> None:
             margin-bottom: 10px;
         }
         .cdf-card-title {
-            font-size: 1rem;
+            font-size: 1.15rem;        /* 🔥 più grande */
             font-weight: 700;
+            text-align: center;        /* 🔥 centrato */
             margin-top: 0.4rem;
-            margin-bottom: 0.25rem;
-            line-height: 1.2;
-            min-height: 2.4em;
+            margin-bottom: 0.3rem;
+            line-height: 1.25;
+            min-height: 2.6em;         /* 🔥 evita salti layout */
         }
         .cdf-card-badges {
             display: flex;
