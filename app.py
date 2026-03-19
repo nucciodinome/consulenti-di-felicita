@@ -1,5 +1,4 @@
 import streamlit as st
-import pandas as pd
 
 from core.cards import (
     RED_ORDER,
@@ -7,8 +6,6 @@ from core.cards import (
     RED_CARDS,
     GREEN_CARDS,
     YELLOW_CARDS,
-    ALL_CARDS,
-    DIMENSION_LABELS,
 )
 from core.scoring import compute_society
 from utils.session import (
@@ -18,6 +15,13 @@ from utils.session import (
     previous_phase,
     start_revision,
     finish_revision,
+)
+from utils.layout import (
+    render_contribution_table,
+    render_result_panel,
+    render_phase_header,
+    info_box,
+    warning_box,
 )
 
 st.set_page_config(
@@ -30,68 +34,58 @@ init_session_state()
 st.title("Consulenti di Felicità")
 st.caption("Un gioco per immaginare società più giuste, libere e felici")
 
+
 # =========================
-# Helpers UI
+# Helpers logici
 # =========================
 
-def render_score_bars(scores: dict):
-    score_df = pd.DataFrame({
-        "Dimensione": ["Equità", "Libertà", "Benessere"],
-        "Punteggio": [scores["E"], scores["L"], scores["B"]],
-    }).set_index("Dimensione")
-    st.bar_chart(score_df)
-
-
-def render_contribution_table(result: dict):
-    df = pd.DataFrame(result["contribution_rows"])
-    st.dataframe(df, hide_index=True, use_container_width=True)
-
-
-def render_final_result_block(result: dict, group_label: str):
-    st.subheader(f"Esiti sociali - {group_label}")
-    render_contribution_table(result)
-
-    scores = result["final_scores"]
-    total = result["total_score"]
-    emoji = result["emoji"]
-
-    st.markdown("### Risultato finale")
-    render_score_bars(scores)
-    st.markdown(f"## {emoji}")
-    st.markdown(f"**Somma finale:** {total}/15")
-
-
-def get_blocked_red_cards_for_group2():
+def get_blocked_red_cards_for_group2() -> list[str]:
     blocked = []
     if st.session_state["group1_selected_red"]:
         blocked.append(st.session_state["group1_selected_red"])
     return blocked
 
 
-def get_blocked_nonred_cards_for_group2():
+def get_blocked_nonred_cards_for_group2() -> list[str]:
     return list(st.session_state["group1_selected_nonred"])
 
 
-def validate_full_selection(red_card, nonred_cards):
+def validate_full_selection(red_card: str | None, nonred_cards: list[str]) -> tuple[bool, str]:
     if red_card is None:
         return False, "Devi scegliere una carta rossa."
+
     if len(nonred_cards) != 4:
         return False, "Devi scegliere esattamente 4 carte non rosse."
+
     green_count = sum(1 for c in nonred_cards if c in GREEN_CARDS)
     yellow_count = sum(1 for c in nonred_cards if c in YELLOW_CARDS)
+
     if green_count < 2 or yellow_count < 2:
         return False, "Le 4 carte non rosse devono includere almeno 2 verdi e 2 gialle."
+
     return True, ""
 
 
-def validate_solution_selection(solution_cards):
+def validate_solution_selection(solution_cards: list[str]) -> tuple[bool, str]:
     if len(solution_cards) != 3:
         return False, "Devi scegliere esattamente 3 carte soluzione."
+
     green_count = sum(1 for c in solution_cards if c in GREEN_CARDS)
     yellow_count = sum(1 for c in solution_cards if c in YELLOW_CARDS)
+
     if green_count < 1 or yellow_count < 1:
         return False, "Le 3 carte soluzione devono includere almeno 1 verde e 1 gialla."
+
     return True, ""
+
+
+def clear_group_result(group_name: str) -> None:
+    if group_name == "group1":
+        st.session_state["group1_result"] = None
+        st.session_state["group1_show_result"] = False
+    elif group_name == "group2":
+        st.session_state["group2_result"] = None
+        st.session_state["group2_show_result"] = False
 
 
 # =========================
@@ -108,6 +102,7 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("### Stato sintetico")
+
     st.write("**Gruppo 1**")
     st.write("Rossa:", st.session_state["group1_selected_red"])
     st.write("4 carte:", st.session_state["group1_selected_nonred"])
@@ -124,14 +119,22 @@ with st.sidebar:
 # =========================
 
 if st.session_state["phase"] == "group1_select_all":
-    st.header("Fase 1 - Gruppo 1: scegli le carte")
-    st.write("Scegliete 1 carta rossa e 4 carte non rosse.")
-    st.write("Le 4 carte non rosse devono includere almeno 2 verdi e 2 gialle.")
+    render_phase_header(
+        "Fase 1 - Gruppo 1: scegli le carte",
+        "Scegliete 1 carta rossa e 4 carte non rosse. Le 4 carte non rosse devono includere almeno 2 verdi e 2 gialle.",
+    )
+    info_box("In questa fase il Gruppo 1 costruisce il proprio set iniziale di 5 carte.")
+
+    red_default_index = (
+        RED_ORDER.index(st.session_state["group1_selected_red"])
+        if st.session_state["group1_selected_red"] in RED_ORDER
+        else 0
+    )
 
     red_choice = st.radio(
         "Scegliete la carta rossa",
         RED_ORDER,
-        index=RED_ORDER.index(st.session_state["group1_selected_red"]) if st.session_state["group1_selected_red"] in RED_ORDER else 0,
+        index=red_default_index,
     )
 
     nonred_choice = st.multiselect(
@@ -143,7 +146,7 @@ if st.session_state["phase"] == "group1_select_all":
 
     col1, col2 = st.columns([1, 1])
 
-    with col1:
+    with col2:
         if st.button("Salva Gruppo 1 e continua", use_container_width=True):
             is_valid, msg = validate_full_selection(red_choice, nonred_choice)
             if not is_valid:
@@ -151,17 +154,22 @@ if st.session_state["phase"] == "group1_select_all":
             else:
                 st.session_state["group1_selected_red"] = red_choice
                 st.session_state["group1_selected_nonred"] = nonred_choice
+                st.session_state["group1_solution_cards"] = []
+                clear_group_result("group1")
                 next_phase()
                 st.rerun()
+
 
 # =========================
 # FASE 2 - Gruppo 2 sceglie tutto
 # =========================
 
 elif st.session_state["phase"] == "group2_select_all":
-    st.header("Fase 2 - Gruppo 2: scegli le carte")
-    st.write("Scegliete 1 carta rossa e 4 carte non rosse.")
-    st.write("Le carte già prese dal Gruppo 1 non sono disponibili.")
+    render_phase_header(
+        "Fase 2 - Gruppo 2: scegli le carte",
+        "Scegliete 1 carta rossa e 4 carte non rosse. Le carte già prese dal Gruppo 1 non sono disponibili.",
+    )
+    warning_box("Il Gruppo 2 non può usare le stesse carte già selezionate dal Gruppo 1.")
 
     blocked_red = get_blocked_red_cards_for_group2()
     available_red = [c for c in RED_ORDER if c not in blocked_red]
@@ -172,7 +180,7 @@ elif st.session_state["phase"] == "group2_select_all":
     if not available_red or len(available_nonred) < 4:
         st.error("Non ci sono abbastanza carte disponibili per il Gruppo 2.")
     else:
-        default_red = (
+        default_red_index = (
             available_red.index(st.session_state["group2_selected_red"])
             if st.session_state["group2_selected_red"] in available_red
             else 0
@@ -181,7 +189,7 @@ elif st.session_state["phase"] == "group2_select_all":
         red_choice = st.radio(
             "Scegliete la carta rossa",
             available_red,
-            index=default_red,
+            index=default_red_index,
         )
 
         nonred_choice = st.multiselect(
@@ -206,15 +214,21 @@ elif st.session_state["phase"] == "group2_select_all":
                 else:
                     st.session_state["group2_selected_red"] = red_choice
                     st.session_state["group2_selected_nonred"] = nonred_choice
+                    st.session_state["group2_solution_cards"] = []
+                    clear_group_result("group2")
                     next_phase()
                     st.rerun()
+
 
 # =========================
 # FASE 3 - Problema Gruppo 1
 # =========================
 
 elif st.session_state["phase"] == "group1_problem":
-    st.header("Fase 3 - Il problema del Gruppo 1")
+    render_phase_header(
+        "Fase 3 - Il problema del Gruppo 1",
+        "Osservate il problema scelto e discutetene gli effetti iniziali sulla società.",
+    )
 
     red_card = st.session_state["group1_selected_red"]
     red_data = RED_CARDS[red_card]
@@ -239,12 +253,16 @@ elif st.session_state["phase"] == "group1_problem":
             next_phase()
             st.rerun()
 
+
 # =========================
 # FASE 4 - Problema Gruppo 2
 # =========================
 
 elif st.session_state["phase"] == "group2_problem":
-    st.header("Fase 4 - Il problema del Gruppo 2")
+    render_phase_header(
+        "Fase 4 - Il problema del Gruppo 2",
+        "Osservate il problema scelto e discutetene gli effetti iniziali sulla società.",
+    )
 
     red_card = st.session_state["group2_selected_red"]
     red_data = RED_CARDS[red_card]
@@ -269,14 +287,19 @@ elif st.session_state["phase"] == "group2_problem":
             next_phase()
             st.rerun()
 
+
 # =========================
 # FASE 5 - Soluzioni Gruppo 1
 # =========================
 
 elif st.session_state["phase"] == "group1_select_solutions":
-    st.header("Fase 5 - Gruppo 1: scegliete le 3 carte soluzione")
-    st.write("Scegliete 3 carte tra le 4 non rosse già selezionate.")
-    st.write("Le 3 carte devono includere almeno 1 verde e 1 gialla.")
+    render_phase_header(
+        "Fase 5 - Gruppo 1: scegliete le 3 carte soluzione",
+        "Scegliete 3 carte tra le 4 non rosse già selezionate. Le 3 carte devono includere almeno 1 verde e 1 gialla.",
+    )
+
+    if st.session_state["revision_mode"] and st.session_state["revision_target_group"] == "group1":
+        info_box("Modalità revisione attiva: il Gruppo 1 può modificare le sue 3 carte soluzione.")
 
     available_cards = st.session_state["group1_selected_nonred"]
 
@@ -301,21 +324,29 @@ elif st.session_state["phase"] == "group1_select_solutions":
                 st.error(msg)
             else:
                 st.session_state["group1_solution_cards"] = solution_choice
+                clear_group_result("group1")
+
                 if st.session_state["revision_mode"] and st.session_state["revision_target_group"] == "group1":
                     finish_revision()
                     st.session_state["phase"] = "results"
                 else:
                     next_phase()
+
                 st.rerun()
+
 
 # =========================
 # FASE 6 - Soluzioni Gruppo 2
 # =========================
 
 elif st.session_state["phase"] == "group2_select_solutions":
-    st.header("Fase 6 - Gruppo 2: scegliete le 3 carte soluzione")
-    st.write("Scegliete 3 carte tra le 4 non rosse già selezionate.")
-    st.write("Le 3 carte devono includere almeno 1 verde e 1 gialla.")
+    render_phase_header(
+        "Fase 6 - Gruppo 2: scegliete le 3 carte soluzione",
+        "Scegliete 3 carte tra le 4 non rosse già selezionate. Le 3 carte devono includere almeno 1 verde e 1 gialla.",
+    )
+
+    if st.session_state["revision_mode"] and st.session_state["revision_target_group"] == "group2":
+        info_box("Modalità revisione attiva: il Gruppo 2 può modificare le sue 3 carte soluzione.")
 
     available_cards = st.session_state["group2_selected_nonred"]
 
@@ -340,19 +371,26 @@ elif st.session_state["phase"] == "group2_select_solutions":
                 st.error(msg)
             else:
                 st.session_state["group2_solution_cards"] = solution_choice
+                clear_group_result("group2")
+
                 if st.session_state["revision_mode"] and st.session_state["revision_target_group"] == "group2":
                     finish_revision()
                     st.session_state["phase"] = "results"
                 else:
                     next_phase()
+
                 st.rerun()
+
 
 # =========================
 # FASE 7 - RISULTATI
 # =========================
 
 elif st.session_state["phase"] == "results":
-    st.header("Fase 7 - Esiti sociali finali")
+    render_phase_header(
+        "Fase 7 - Esiti sociali finali",
+        "Osservate prima come si costruisce il risultato. Poi premete il pulsante per mostrare grafico, emoji e interpretazione.",
+    )
 
     col_left, col_right = st.columns(2)
 
@@ -377,15 +415,7 @@ elif st.session_state["phase"] == "results":
                     st.session_state["group1_show_result"] = True
                     st.rerun()
             else:
-                result = st.session_state["group1_result"]
-                scores = result["final_scores"]
-                total = result["total_score"]
-                emoji = result["emoji"]
-
-                st.markdown("### Esito finale")
-                render_score_bars(scores)
-                st.markdown(f"## {emoji}")
-                st.markdown(f"**Somma finale:** {total}/15")
+                render_result_panel(st.session_state["group1_result"], "Gruppo 1")
 
                 if st.button("Rivedi le soluzioni del Gruppo 1", key="revise_g1", use_container_width=True):
                     start_revision("group1")
@@ -412,15 +442,7 @@ elif st.session_state["phase"] == "results":
                     st.session_state["group2_show_result"] = True
                     st.rerun()
             else:
-                result = st.session_state["group2_result"]
-                scores = result["final_scores"]
-                total = result["total_score"]
-                emoji = result["emoji"]
-
-                st.markdown("### Esito finale")
-                render_score_bars(scores)
-                st.markdown(f"## {emoji}")
-                st.markdown(f"**Somma finale:** {total}/15")
+                render_result_panel(st.session_state["group2_result"], "Gruppo 2")
 
                 if st.button("Rivedi le soluzioni del Gruppo 2", key="revise_g2", use_container_width=True):
                     start_revision("group2")
