@@ -97,7 +97,7 @@ def render_contribution_table(result: dict) -> None:
 
 def render_score_bars(scores: dict) -> None:
     """
-    Mostra istogramma delle 3 dimensioni finali su scala 0-5.
+    Istogramma minimal delle 3 dimensioni (0–5).
     Ordine fisso: Equità, Libertà, Benessere.
     """
     import matplotlib.pyplot as plt
@@ -106,9 +106,39 @@ def render_score_bars(scores: dict) -> None:
     values = [scores["E"], scores["L"], scores["B"]]
 
     fig, ax = plt.subplots(figsize=(6, 4))
-    ax.bar(labels, values)
+
+    # barre
+    bars = ax.bar(labels, values)
+
+    # scala fissa
     ax.set_ylim(0, 5)
-    ax.set_ylabel("Punteggio")
+
+    # rimuovi elementi inutili
+    ax.set_ylabel("")  # niente "Punteggio"
+    ax.set_yticks([])  # niente numeri asse Y
+
+    # rimuovi bordi
+    for spine in ["top", "right", "left"]:
+        ax.spines[spine].set_visible(False)
+
+    # lascia solo baseline sotto
+    ax.spines["bottom"].set_alpha(0.3)
+
+    # rimuovi griglia
+    ax.grid(False)
+
+    # valore sopra ogni barra
+    for bar in bars:
+        height = bar.get_height()
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            height + 0.1,
+            f"{int(height)}",
+            ha="center",
+            va="bottom",
+            fontsize=12,
+            fontweight="bold",
+        )
 
     st.pyplot(fig, width="stretch")
 
