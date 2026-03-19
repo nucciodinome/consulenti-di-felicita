@@ -96,16 +96,21 @@ def render_contribution_table(result: dict) -> None:
 
 
 def render_score_bars(scores: dict) -> None:
-    import pandas as pd
+    """
+    Mostra istogramma delle 3 dimensioni finali su scala 0-5.
+    Ordine fisso: Equità, Libertà, Benessere.
+    """
+    import matplotlib.pyplot as plt
 
-    df = pd.DataFrame(
-        {
-            "Dimensione": ["Equità", "Libertà", "Benessere"],
-            "Punteggio": [scores["E"], scores["L"], scores["B"]],
-        }
-    ).set_index("Dimensione")
+    labels = ["Equità", "Libertà", "Benessere"]
+    values = [scores["E"], scores["L"], scores["B"]]
 
-    st.bar_chart(df)
+    fig, ax = plt.subplots(figsize=(6, 4))
+    ax.bar(labels, values)
+    ax.set_ylim(0, 5)
+    ax.set_ylabel("Punteggio")
+
+    st.pyplot(fig, width="stretch")
 
 
 def render_dimension_badges(scores: dict) -> None:
