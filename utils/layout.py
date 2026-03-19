@@ -107,12 +107,11 @@ def render_score_bars(scores: dict) -> None:
 
     x = np.arange(len(labels))  # [0,1,2]
 
-    fig, ax = plt.subplots(figsize=(5, 3.5))
+    fig, ax = plt.subplots(figsize=(5, 4))
 
     bars = ax.bar(
         x,
         values,
-        width=0.5  # 🔥 chiave: barre più strette → meno effetto “sparso”
     )
 
     # asse X controllato manualmente
