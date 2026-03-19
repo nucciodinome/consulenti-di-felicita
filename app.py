@@ -24,7 +24,8 @@ from utils.layout import (
     warning_box,
 )
 from utils.card_ui import (
-    render_card_grid,
+    inject_card_ui_css,
+    render_card_section,
     toggle_single_select,
     toggle_multi_select,
 )
@@ -35,6 +36,7 @@ st.set_page_config(
 )
 
 init_session_state()
+inject_card_ui_css()
 
 st.title("Consulenti di Felicità")
 st.caption("Un gioco per immaginare società più giuste, libere e felici")
@@ -93,27 +95,6 @@ def clear_group_result(group_name: str) -> None:
         st.session_state["group2_show_result"] = False
 
 
-def render_selection_status(red_card: str | None, nonred_cards: list[str]) -> None:
-    st.markdown("### Scelte attuali")
-    st.write(f"**Carta rossa:** {red_card if red_card else 'nessuna'}")
-    st.write(f"**Carte non rosse ({len(nonred_cards)}/4):**")
-    if nonred_cards:
-        for c in nonred_cards:
-            st.write(f"- {c}")
-    else:
-        st.write("Nessuna carta selezionata.")
-
-
-def render_solution_status(solution_cards: list[str]) -> None:
-    st.markdown("### Soluzioni selezionate")
-    st.write(f"**Carte attive ({len(solution_cards)}/3):**")
-    if solution_cards:
-        for c in solution_cards:
-            st.write(f"- {c}")
-    else:
-        st.write("Nessuna carta selezionata.")
-
-
 # =========================
 # Sidebar
 # =========================
@@ -151,8 +132,8 @@ if st.session_state["phase"] == "group1_select_all":
     )
     info_box("In questa fase il Gruppo 1 costruisce il proprio set iniziale di 5 carte.")
 
-    st.markdown("## Carte rosse")
-    clicked_red = render_card_grid(
+    clicked_red = render_card_section(
+        title="Carte rosse",
         card_names=RED_ORDER,
         cards_dict=RED_CARDS,
         selected_cards=[st.session_state["group1_selected_red"]] if st.session_state["group1_selected_red"] else [],
@@ -160,6 +141,9 @@ if st.session_state["phase"] == "group1_select_all":
         columns=4,
         key_prefix="g1_red",
         compact=True,
+        counter_label="Carta rossa scelta",
+        counter_selected=1 if st.session_state["group1_selected_red"] else 0,
+        counter_max=1,
     )
     if clicked_red:
         st.session_state["group1_selected_red"] = toggle_single_select(
@@ -169,10 +153,10 @@ if st.session_state["phase"] == "group1_select_all":
         clear_group_result("group1")
         st.rerun()
 
-    st.markdown("## Carte verdi e gialle")
     nonred_cards_dict = {**GREEN_CARDS, **YELLOW_CARDS}
 
-    clicked_nonred = render_card_grid(
+    clicked_nonred = render_card_section(
+        title="Carte verdi e gialle",
         card_names=NON_RED_ORDER,
         cards_dict=nonred_cards_dict,
         selected_cards=st.session_state["group1_selected_nonred"],
@@ -180,6 +164,9 @@ if st.session_state["phase"] == "group1_select_all":
         columns=4,
         key_prefix="g1_nonred",
         compact=True,
+        counter_label="Carte non rosse selezionate",
+        counter_selected=len(st.session_state["group1_selected_nonred"]),
+        counter_max=4,
     )
     if clicked_nonred:
         st.session_state["group1_selected_nonred"] = toggle_multi_select(
@@ -189,11 +176,6 @@ if st.session_state["phase"] == "group1_select_all":
         )
         clear_group_result("group1")
         st.rerun()
-
-    render_selection_status(
-        st.session_state["group1_selected_red"],
-        st.session_state["group1_selected_nonred"],
-    )
 
     col1, col2 = st.columns([1, 1])
     with col2:
@@ -225,8 +207,8 @@ elif st.session_state["phase"] == "group2_select_all":
     blocked_red = get_blocked_red_cards_for_group2()
     blocked_nonred = get_blocked_nonred_cards_for_group2()
 
-    st.markdown("## Carte rosse")
-    clicked_red = render_card_grid(
+    clicked_red = render_card_section(
+        title="Carte rosse",
         card_names=RED_ORDER,
         cards_dict=RED_CARDS,
         selected_cards=[st.session_state["group2_selected_red"]] if st.session_state["group2_selected_red"] else [],
@@ -234,6 +216,9 @@ elif st.session_state["phase"] == "group2_select_all":
         columns=4,
         key_prefix="g2_red",
         compact=True,
+        counter_label="Carta rossa scelta",
+        counter_selected=1 if st.session_state["group2_selected_red"] else 0,
+        counter_max=1,
     )
     if clicked_red and clicked_red not in blocked_red:
         st.session_state["group2_selected_red"] = toggle_single_select(
@@ -243,10 +228,10 @@ elif st.session_state["phase"] == "group2_select_all":
         clear_group_result("group2")
         st.rerun()
 
-    st.markdown("## Carte verdi e gialle")
     nonred_cards_dict = {**GREEN_CARDS, **YELLOW_CARDS}
 
-    clicked_nonred = render_card_grid(
+    clicked_nonred = render_card_section(
+        title="Carte verdi e gialle",
         card_names=NON_RED_ORDER,
         cards_dict=nonred_cards_dict,
         selected_cards=st.session_state["group2_selected_nonred"],
@@ -254,6 +239,9 @@ elif st.session_state["phase"] == "group2_select_all":
         columns=4,
         key_prefix="g2_nonred",
         compact=True,
+        counter_label="Carte non rosse selezionate",
+        counter_selected=len(st.session_state["group2_selected_nonred"]),
+        counter_max=4,
     )
     if clicked_nonred and clicked_nonred not in blocked_nonred:
         st.session_state["group2_selected_nonred"] = toggle_multi_select(
@@ -263,11 +251,6 @@ elif st.session_state["phase"] == "group2_select_all":
         )
         clear_group_result("group2")
         st.rerun()
-
-    render_selection_status(
-        st.session_state["group2_selected_red"],
-        st.session_state["group2_selected_nonred"],
-    )
 
     col1, col2 = st.columns([1, 1])
 
@@ -379,7 +362,8 @@ elif st.session_state["phase"] == "group1_select_solutions":
     available_cards = st.session_state["group1_selected_nonred"]
     cards_dict = {name: ({**GREEN_CARDS, **YELLOW_CARDS}[name]) for name in available_cards}
 
-    clicked_solution = render_card_grid(
+    clicked_solution = render_card_section(
+        title="Carte soluzione del Gruppo 1",
         card_names=available_cards,
         cards_dict=cards_dict,
         selected_cards=st.session_state["group1_solution_cards"],
@@ -387,6 +371,9 @@ elif st.session_state["phase"] == "group1_select_solutions":
         columns=4,
         key_prefix="g1_sol",
         compact=True,
+        counter_label="Soluzioni selezionate",
+        counter_selected=len(st.session_state["group1_solution_cards"]),
+        counter_max=3,
     )
     if clicked_solution:
         st.session_state["group1_solution_cards"] = toggle_multi_select(
@@ -396,8 +383,6 @@ elif st.session_state["phase"] == "group1_select_solutions":
         )
         clear_group_result("group1")
         st.rerun()
-
-    render_solution_status(st.session_state["group1_solution_cards"])
 
     col1, col2 = st.columns([1, 1])
 
@@ -439,7 +424,8 @@ elif st.session_state["phase"] == "group2_select_solutions":
     available_cards = st.session_state["group2_selected_nonred"]
     cards_dict = {name: ({**GREEN_CARDS, **YELLOW_CARDS}[name]) for name in available_cards}
 
-    clicked_solution = render_card_grid(
+    clicked_solution = render_card_section(
+        title="Carte soluzione del Gruppo 2",
         card_names=available_cards,
         cards_dict=cards_dict,
         selected_cards=st.session_state["group2_solution_cards"],
@@ -447,6 +433,9 @@ elif st.session_state["phase"] == "group2_select_solutions":
         columns=4,
         key_prefix="g2_sol",
         compact=True,
+        counter_label="Soluzioni selezionate",
+        counter_selected=len(st.session_state["group2_solution_cards"]),
+        counter_max=3,
     )
     if clicked_solution:
         st.session_state["group2_solution_cards"] = toggle_multi_select(
@@ -456,8 +445,6 @@ elif st.session_state["phase"] == "group2_select_solutions":
         )
         clear_group_result("group2")
         st.rerun()
-
-    render_solution_status(st.session_state["group2_solution_cards"])
 
     col1, col2 = st.columns([1, 1])
 
