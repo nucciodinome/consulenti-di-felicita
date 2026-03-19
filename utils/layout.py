@@ -91,7 +91,7 @@ def render_contribution_table(result: dict) -> None:
     st.dataframe(
         styled_df,
         hide_index=True,
-        use_container_width=True,
+        width="stretch",
     )
 
 
