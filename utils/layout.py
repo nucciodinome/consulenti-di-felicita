@@ -97,35 +97,42 @@ def render_contribution_table(result: dict) -> None:
 
 def render_score_bars(scores: dict) -> None:
     """
-    Istogramma minimal delle 3 dimensioni (0–5).
-    Ordine fisso: Equità, Libertà, Benessere.
+    Istogramma compatto e centrato (0–5).
     """
     import matplotlib.pyplot as plt
+    import numpy as np
 
     labels = ["Equità", "Libertà", "Benessere"]
     values = [scores["E"], scores["L"], scores["B"]]
 
-    fig, ax = plt.subplots(figsize=(5, 4))
+    x = np.arange(len(labels))  # [0,1,2]
 
-    # barre
-    bars = ax.bar(labels, values)
+    fig, ax = plt.subplots(figsize=(5, 3.5))
 
-    # scala fissa
+    bars = ax.bar(
+        x,
+        values,
+        width=0.5  # 🔥 chiave: barre più strette → meno effetto “sparso”
+    )
+
+    # asse X controllato manualmente
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels)
+
+    # scala
     ax.set_ylim(0, 5)
 
-    # rimuovi elementi inutili
-    ax.set_ylabel("")  # niente "Punteggio"
-    ax.set_yticks([])  # niente numeri asse Y
+    # pulizia grafica
+    ax.set_yticks([])
+    ax.set_ylabel("")
+    ax.grid(False)
 
-    # rimuovi bordi
     for spine in ["top", "right", "left"]:
         ax.spines[spine].set_visible(False)
 
-    # lascia solo baseline sotto
     ax.spines["bottom"].set_alpha(0.3)
-
-    # rimuovi griglia
-    ax.grid(False)
+    # 🔥 centra meglio il grafico
+    ax.margins(x=0.2)
 
     st.pyplot(fig, width="stretch")
 
