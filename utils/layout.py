@@ -105,7 +105,7 @@ def render_score_bars(scores: dict) -> None:
     labels = ["Equità", "Libertà", "Benessere"]
     values = [scores["E"], scores["L"], scores["B"]]
 
-    fig, ax = plt.subplots(figsize=(6, 4))
+    fig, ax = plt.subplots(figsize=(5, 4))
 
     # barre
     bars = ax.bar(labels, values)
@@ -126,19 +126,6 @@ def render_score_bars(scores: dict) -> None:
 
     # rimuovi griglia
     ax.grid(False)
-
-    # valore sopra ogni barra
-    for bar in bars:
-        height = bar.get_height()
-        ax.text(
-            bar.get_x() + bar.get_width() / 2,
-            height + 0.1,
-            f"{int(height)}",
-            ha="center",
-            va="bottom",
-            fontsize=12,
-            fontweight="bold",
-        )
 
     st.pyplot(fig, width="stretch")
 
