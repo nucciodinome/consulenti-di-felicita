@@ -120,9 +120,32 @@ def render_dimension_badges(scores: dict) -> None:
 def render_emoji_result(total_score: int, emoji: str) -> None:
     """Mostra emoji finale e somma su 15."""
     st.markdown("### Indice finale della società")
-    st.markdown(f"<div style='font-size: 4rem; text-align: center;'>{emoji}</div>", unsafe_allow_html=True)
+
     st.markdown(
-        f"<p style='text-align: center; font-size: 1.2rem;'><strong>{total_score}/15</strong></p>",
+        f"""
+        <div style='
+            font-size: 80px;
+            text-align: center;
+            line-height: 1;
+            margin-top: 10px;
+        '>
+            {emoji}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        f"""
+        <div style='
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: 6px;
+        '>
+            {total_score}/15
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
@@ -165,18 +188,15 @@ def render_interpretation_block(scores: dict) -> None:
 
 def render_result_panel(result: dict, group_label: str) -> None:
     """
-    Pannello finale completo:
-    tabella contributi, metriche, barre, emoji, interpretazione.
+    Pannello finale senza tabella contributi.
+    La tabella viene mostrata separatamente in app.py.
     """
     st.subheader(group_label)
-    render_contribution_table(result)
-
     st.markdown("### Esiti sociali")
     render_dimension_badges(result["final_scores"])
     render_score_bars(result["final_scores"])
     render_emoji_result(result["total_score"], result["emoji"])
     render_interpretation_block(result["final_scores"])
-
 
 def centered_button(label: str, key: str | None = None, use_container_width: bool = True) -> bool:
     """
