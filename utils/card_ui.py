@@ -148,21 +148,34 @@ def render_card_tile(
     style = CARD_TYPE_STYLES.get(card_type, CARD_TYPE_STYLES["yellow"])
     img = load_card_image(card_data.get("image", ""))
 
-    border_width = "4px" if selected else "2px"
-    opacity = "0.45" if blocked else "1.0"
-    shadow = "0 0 0 4px rgba(0, 123, 255, 0.18)" if selected else "0 1px 2px rgba(0,0,0,0.04)"
-
-    st.markdown(
-        f"""
-        <div class="cdf-card-shell" style="
-            border: {border_width} solid {style['border']};
-            background: {style['bg']};
-            opacity: {opacity};
-            box-shadow: {shadow};
-        ">
-        """,
-        unsafe_allow_html=True,
-    )
+    # Evidenziazione leggera senza wrapper HTML vuoti
+    if selected:
+        st.markdown(
+            f"""
+            <div style="
+                border: 4px solid {style['border']};
+                border-radius: 14px;
+                padding: 6px;
+                margin-bottom: 6px;
+                background: {style['bg']};
+            "></div>
+            """,
+            unsafe_allow_html=True,
+        )
+    elif blocked:
+        st.markdown(
+            """
+            <div style="
+                border: 2px solid #bdbdbd;
+                border-radius: 14px;
+                padding: 6px;
+                margin-bottom: 6px;
+                opacity: 0.45;
+                background: #f6f6f6;
+            "></div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     if img is not None:
         st.image(img, width="stretch")
@@ -225,10 +238,7 @@ def render_card_tile(
         width="stretch",
     )
 
-    st.markdown("</div>", unsafe_allow_html=True)
-
     return clicked
-
 
 def render_card_grid(
     card_names: list[str],
