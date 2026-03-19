@@ -97,7 +97,7 @@ def render_contribution_table(result: dict) -> None:
 
 def render_score_bars(scores: dict) -> None:
     """
-    Istogramma compatto e centrato (0–5).
+    Istogramma pulito, leggibile, compatto (0–5).
     """
     import matplotlib.pyplot as plt
     import numpy as np
@@ -105,32 +105,34 @@ def render_score_bars(scores: dict) -> None:
     labels = ["Equità", "Libertà", "Benessere"]
     values = [scores["E"], scores["L"], scores["B"]]
 
-    x = np.arange(len(labels))  # [0,1,2]
+    x = np.arange(len(labels))
 
-    fig, ax = plt.subplots(figsize=(5, 4))
+    fig, ax = plt.subplots(figsize=(5, 2.8))  # 🔥 più basso
 
-    bars = ax.bar(
-        x,
-        values,
-    )
+    ax.bar(x, values, width=0.5)
 
-    # asse X controllato manualmente
+    # asse X
     ax.set_xticks(x)
-    ax.set_xticklabels(labels)
+    ax.set_xticklabels(labels, fontsize=11)
 
-    # scala
+    # asse Y (visibile, ma pulito)
     ax.set_ylim(0, 5)
+    ax.set_yticks(range(0, 6))  # 0–5
 
-    # pulizia grafica
-    ax.set_yticks([])
+    # griglia orizzontale leggera
+    ax.grid(axis="y", linestyle="-", linewidth=0.5, alpha=0.3)
+
+    # rimuovi label asse
     ax.set_ylabel("")
-    ax.grid(False)
 
+    # rimuovi bordi inutili
     for spine in ["top", "right", "left"]:
         ax.spines[spine].set_visible(False)
 
+    # baseline leggera
     ax.spines["bottom"].set_alpha(0.3)
-    # 🔥 centra meglio il grafico
+
+    # migliora spaziatura
     ax.margins(x=0.2)
 
     st.pyplot(fig, width="stretch")
